@@ -26,7 +26,9 @@ VAL_RE = "(0x00000000[0-9a-f]+)"
 INDENT_RE = r"\s*\.\.\s*"
 INDENT_ESC = "\\\s*\.\.\\\s*"
 
-@test(10, "pte printout")
+# Worth 0 points: printing a page table (vmprint) was already done in an
+# earlier lab, so it is only kept here as a sanity check, not re-graded.
+@test(0, "pte printout")
 def test_pteprint():
     first = True
     r.run_qemu(shell_script([
