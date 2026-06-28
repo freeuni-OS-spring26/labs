@@ -47,6 +47,16 @@ sys_sbrk(void)
   argint(1, &t);
   addr = myproc()->sz;
 
+#ifdef LAB_PERPROC
+  // The perproc lab simplifies copyin()/copyinstr() to dereference user
+  // addresses directly (through the per-process kernel page table).  That
+  // is incompatible with lazy allocation, which leaves pages unmapped
+  // until they are touched, so always allocate eagerly here and ignore
+  // the SBRK_LAZY request.
+  (void)t;
+  if(growproc(n) < 0)
+    return -1;
+#else
   if(t == SBRK_EAGER || n < 0) {
     if(growproc(n) < 0) {
       return -1;
@@ -59,6 +69,7 @@ sys_sbrk(void)
       return -1;
     myproc()->sz += n;
   }
+#endif
   return addr;
 }
 

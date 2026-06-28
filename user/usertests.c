@@ -2762,9 +2762,13 @@ struct test {
   {sbrklast, "sbrklast"},
   {sbrk8000, "sbrk8000"},
   {badarg, "badarg" },
+#ifndef LAB_PERPROC
+  // The perproc lab disables lazy allocation (sbrk is always eager), so
+  // the sbrklazy()-based tests do not apply.
   {lazy_alloc, "lazy_alloc"},
   {lazy_unmap, "lazy_unmap"},
   {lazy_copy, "lazy_copy"},
+#endif
   { 0, 0},
 };
 
