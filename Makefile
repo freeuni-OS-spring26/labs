@@ -44,10 +44,15 @@ OBJS_KCSAN += \
 	$K/kcsan.o
 endif
 
-ifeq ($(LAB),lock)
+ifeq ($(LAB),$(filter $(LAB), perproc lock))
 OBJS += \
 	$K/stats.o\
 	$K/sprintf.o
+endif
+
+ifeq ($(LAB),perproc)
+OBJS += \
+	$K/vmcopyin.o
 endif
 
 
@@ -145,7 +150,7 @@ tags: $(OBJS)
 
 ULIB = $U/ulib.o $U/usys.o $U/printf.o $U/umalloc.o
 
-ifeq ($(LAB),lock)
+ifeq ($(LAB),$(filter $(LAB), perproc lock))
 ULIB += $U/statistics.o
 endif
 
@@ -205,7 +210,7 @@ UPROGS += \
 	$U/_secret
 endif
 
-ifeq ($(LAB),lock)
+ifeq ($(LAB),$(filter $(LAB), perproc lock))
 UPROGS += \
 	$U/_stats
 endif

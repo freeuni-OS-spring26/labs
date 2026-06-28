@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+
+import re
+from gradelib import *
+
+r = Runner(save("xv6.out"))
+
+# The expected structure of the first process's page table, as printed by
+# vmprint().  Only the *shape* (indentation + which slots are present) is
+# checked; the concrete addresses are matched with a regexp and the
+# pte -> pa relationship is verified separately below.  This layout is the
+# one produced by a correct solution on the xv6-2025 code base.
+PTE_PRINT = """page table 0x0000000087f52000
+ ..0: pte 0x0000000021fd3801 pa 0x0000000087f4e000
+ .. ..0: pte 0x0000000021fd3401 pa 0x0000000087f4d000
+ .. .. ..0: pte 0x0000000021fd3c1b pa 0x0000000087f4f000
+ .. .. ..1: pte 0x0000000021fd3017 pa 0x0000000087f4c000
+ .. .. ..2: pte 0x0000000021fd2c07 pa 0x0000000087f4b000
+ .. .. ..3: pte 0x0000000021fd2817 pa 0x0000000087f4a000
+ ..255: pte 0x0000000021fd4401 pa 0x0000000087f51000
+ .. ..511: pte 0x0000000021fd4001 pa 0x0000000087f50000
+ .. .. ..510: pte 0x0000000021fd5807 pa 0x0000000087f56000
+ .. .. ..511: pte 0x000000002000180b pa 0x0000000080006000"""
+
+VAL_RE = "(0x00000000[0-9a-f]+)"
+INDENT_RE = r"\s*\.\.\s*"
+INDENT_ESC = "\\\s*\.\.\\\s*"
+
+@test(10, "pte printout")
+def test_pteprint():
+    first = True
+    r.run_qemu(shell_script([
+        'echo hi'
+    ]))
+    r.match('^hi')
+    p = re.compile(VAL_RE)
+    d = re.compile(INDENT_RE)
+    for l in PTE_PRINT.splitlines():
+        l = d.sub(INDENT_ESC, l)
+        l = p.sub(VAL_RE, l)
+        r.match(r'^{}$'.format(l))
+        if first:
+            first = False
+        else:
+            matches = re.findall(r'^{}$'.format(l), r.qemu.output, re.MULTILINE)
+            assert_equal(len(matches[0]), 2)
+            pa = (int(matches[0][0], 16) >> 10) << 12
+            assert_equal(int(matches[0][1], 16), pa)
+
+@test(5, "answers-perproc.txt")
+def test_answers():
+    # just a simple sanity check, will be graded manually
+    check_answers("answers-perproc.txt")
+
+@test(5, "count copyin")
+def test_count():
+    # Run `stats` twice and check that each `stats` invocation drives a
+    # fixed number of copyin()/copyinstr() calls -- i.e. that copyin and
+    # copyinstr have been rerouted through copyin_new/copyinstr_new (which
+    # bump the counters).  The per-invocation deltas are deterministic;
+    # copyin is 27 under the grade harness (28 when typed by hand), and
+    # copyinstr is 3.
+    r.run_qemu(shell_script([
+        'stats', 'stats'
+    ]), timeout=150)
+    matches = re.findall(r'^copyin: (\d+)', r.qemu.output, re.MULTILINE)
+    assert_equal(len(matches), 2)
+    d = int(matches[1]) - int(matches[0])
+    if d not in (27, 28):
+        raise AssertionError(
+            "copyin count increased by %d between runs, expected ~28 "
+            "(did you reroute copyin to copyin_new?)" % d)
+    matches = re.findall(r'^copyinstr: (\d+)', r.qemu.output, re.MULTILINE)
+    assert_equal(len(matches), 2)
+    assert_equal(int(matches[1]), int(matches[0]) + 3)
+
+@test(0, "usertests")
+def test_usertests():
+    r.run_qemu(shell_script([
+        'usertests'
+    ]), timeout=300)
+
+@test(5, "usertests: copyin", parent=test_usertests)
+def test_copyin():
+    r.match('^test copyin: OK$')
+
+@test(5, "usertests: copyinstr1", parent=test_usertests)
+def test_copyinstr1():
+    r.match('^test copyinstr1: OK$')
+
+@test(5, "usertests: copyinstr2", parent=test_usertests)
+def test_copyinstr2():
+    r.match('^test copyinstr2: OK$')
+
+@test(5, "usertests: copyinstr3", parent=test_usertests)
+def test_copyinstr3():
+    r.match('^test copyinstr3: OK$')
+
+@test(5, "usertests: sbrkmuch", parent=test_usertests)
+def test_sbrkmuch():
+    r.match('^test sbrkmuch: OK$')
+
+@test(20, "usertests: all tests", parent=test_usertests)
+def test_usertests_all():
+    r.match('^ALL TESTS PASSED$')
+
+@test(1, "time")
+def test_time():
+    check_time()
+
+run_tests()

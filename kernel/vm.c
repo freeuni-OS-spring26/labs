@@ -137,6 +137,16 @@ walkaddr(pagetable_t pagetable, uint64 va)
   return pa;
 }
 
+#ifdef LAB_PERPROC
+// Recursively print page-table pages.
+// (pgtbl lab, exercise "Print a page table")
+void
+vmprint(pagetable_t pagetable)
+{
+  // your code here
+}
+#endif
+
 // Create PTEs for virtual addresses starting at va that refer to
 // physical addresses starting at pa.
 // va and size MUST be page-aligned.

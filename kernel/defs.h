@@ -169,6 +169,9 @@ int             copyin(pagetable_t, char *, uint64, uint64);
 int             copyinstr(pagetable_t, char *, uint64, uint64);
 int             ismapped(pagetable_t, uint64);
 uint64          vmfault(pagetable_t, uint64, int);
+#ifdef LAB_PERPROC
+void            vmprint(pagetable_t);
+#endif
 
 // plic.c
 void            plicinit(void);
@@ -183,3 +186,16 @@ void            virtio_disk_intr(void);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
+
+#ifdef LAB_PERPROC
+// stats.c
+void            statsinit(void);
+void            statsinc(void);
+
+// sprintf.c
+int             snprintf(char*, unsigned long, const char*, ...);
+
+// vmcopyin.c
+int             copyin_new(pagetable_t, char *, uint64, uint64);
+int             copyinstr_new(pagetable_t, char *, uint64, uint64);
+#endif

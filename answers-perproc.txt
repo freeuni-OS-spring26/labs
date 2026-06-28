@@ -1,0 +1,5 @@
+For every leaf page in the vmprint output of the first process, explain
+what it logically contains and (where relevant) the permission bits set
+on it. Identify the trampoline and trapframe pages.
+
+(Replace this text with your answer.)
