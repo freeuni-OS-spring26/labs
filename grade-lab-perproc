@@ -5,49 +5,30 @@ from gradelib import *
 
 r = Runner(save("xv6.out"))
 
-# The expected structure of the first process's page table, as printed by
-# vmprint().  Only the *shape* (indentation + which slots are present) is
-# checked; the concrete addresses are matched with a regexp and the
-# pte -> pa relationship is verified separately below.  This layout is the
-# one produced by a correct solution on the xv6-2025 code base.
-PTE_PRINT = """page table 0x0000000087f52000
- ..0: pte 0x0000000021fd3801 pa 0x0000000087f4e000
- .. ..0: pte 0x0000000021fd3401 pa 0x0000000087f4d000
- .. .. ..0: pte 0x0000000021fd3c1b pa 0x0000000087f4f000
- .. .. ..1: pte 0x0000000021fd3017 pa 0x0000000087f4c000
- .. .. ..2: pte 0x0000000021fd2c07 pa 0x0000000087f4b000
- .. .. ..3: pte 0x0000000021fd2817 pa 0x0000000087f4a000
- ..255: pte 0x0000000021fd4401 pa 0x0000000087f51000
- .. ..511: pte 0x0000000021fd4001 pa 0x0000000087f50000
- .. .. ..510: pte 0x0000000021fd5807 pa 0x0000000087f56000
- .. .. ..511: pte 0x000000002000180b pa 0x0000000080006000"""
-
-VAL_RE = "(0x00000000[0-9a-f]+)"
-INDENT_RE = r"\s*\.\.\s*"
-INDENT_ESC = "\\\s*\.\.\\\s*"
-
 # Worth 0 points: printing a page table (vmprint) was already done in an
 # earlier lab, so it is only kept here as a sanity check, not re-graded.
+# The format matches the pgtbl lab's vmprint (each line shows the virtual
+# address of the entry), so a solution can be reused as-is.  Here vmprint
+# is called on the first process's user page table at the end of exec().
 @test(0, "pte printout")
 def test_pteprint():
-    first = True
     r.run_qemu(shell_script([
         'echo hi'
     ]))
     r.match('^hi')
-    p = re.compile(VAL_RE)
-    d = re.compile(INDENT_RE)
-    for l in PTE_PRINT.splitlines():
-        l = d.sub(INDENT_ESC, l)
-        l = p.sub(VAL_RE, l)
-        r.match(r'^{}$'.format(l))
-        if first:
-            first = False
-        else:
-            matches = re.findall(r'^{}$'.format(l), r.qemu.output, re.MULTILINE)
-            assert_equal(len(matches[0]), 2)
-            pa = (int(matches[0][0], 16) >> 10) << 12
-            assert_equal(int(matches[0][1], 16), pa)
+    r.match(
+        '^page table 0x',
+        '^ \.\.0x0000000000000000',
+        '^ \.\. \.\.0x0000000000000000',
+        '^ \.\. \.\. \.\.0x0000000000000000',
+        '^ \.\. \.\. \.\.0x0000000000001000',
+        '^ \.\. \.\. \.\.0x0000000000002000',
+        '^ \.\. \.\. \.\.0x0000000000003000',
+        '^ \.\.(0xffffffffc0000000|0x0000003fc0000000)',
+        '^ \.\. \.\.(0xffffffffffe00000|0x0000003fffe00000)',
+        '^ \.\. \.\. \.\.(0xffffffffffffe000|0x0000003fffffe000)',
+        '^ \.\. \.\. \.\.(0xfffffffffffff000|0x0000003ffffff000)',
+    )
 
 @test(5, "answers-perproc.txt")
 def test_answers():
